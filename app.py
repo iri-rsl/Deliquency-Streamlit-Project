@@ -13,7 +13,7 @@ st.set_page_config(page_title="Data Storytelling Dashboard", layout="wide")
 
 st.title("Has France become safer in the past decade?")
 st.write("An analysis of delinquency trends across French departments with data taken between 2016 and 2024.")
-
+st.write("By Iriantsoa RASOLOARIVALONA - Data Visualization Project - Efrei Paris")
 # Sidebar navigation
 st.sidebar.header("Navigation")
 st.sidebar.title("🚔 Delinquency Analysis")

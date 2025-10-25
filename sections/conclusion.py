@@ -13,14 +13,13 @@ def show():
     - The data highlights **patterns of reporting**, not necessarily patterns of crime.
 
     ### 🧠 Interpretation
-    Numbers about delinquency carry weight in public discussions, but they only tell part of the story.  
-    What we see here depends on how offences are declared, recorded, and processed — not just on what happens in reality.  
-    Data helps **inform** debates, but it should never replace **critical thinking**.
-    Data on delinquency only represents **recorded infractions**, not the full scope of lived experiences.
-    Discrepancies often exist between **victimization surveys** and **official police data** —  some offences are never pursued or classified due to lack of proof or procedural limits.  
-
+    - High reported rates may reflect **greater reporting activity**, a greater police presence or a culture closer to trust in authorities, rather than higher actual delinquency.
+    - **Underreporting** remains a significant issue, especially for sensitive crimes.
+    - The dataset underrepresents the **true complexity** of delinquency. Indeed, there seems to be missing data for certain cases and types of offences.
+                
     ### 🚀 Next Steps
-    - Compare these results with **socioeconomic indicators** (unemployment, education, density).  
+    - Compare these results with **socioeconomic indicators** (unemployment, education, density) for real insights on delinquency drivers.
+    - Integrate **victimization survey data** to capture unreported offences.  
     - Examine **seasonal or pandemic-related changes** in crime reports.
     - Explore **qualitative research** to understand underreporting and public perception.
 

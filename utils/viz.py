@@ -19,6 +19,9 @@ def get_records_by_crime_type(data, crime_type: str) -> pd.DataFrame:
     """Filter data by 'crime_type'."""
     return data[data['crime_type'] == crime_type]
 
+def get_records_by_region(data, region_name) -> pd.DataFrame:
+    """Filter data by 'Region_name'."""
+    return data[data['Region_name'] == region_name]
 # --------------------------------------------------------------
 # Data preparation visualization functions
 # --------------------------------------------------------------
@@ -527,20 +530,437 @@ def show_kpis(data):
 # Regional comparison visualization functions
 # --------------------------------------------------------------
 
-def region_selection(data):
-    """Create region selection and return filtered data."""
-    st.markdown("#### 🔧 Region Selection")
-    regions = ['All'] + list(data['Region_name'].unique())
-    selected_region = st.selectbox("Select Region", regions)
+def select_region_for_analysis(data):
+    """Allow user to select a specific region for detailed analysis."""
+    st.markdown("### 🏛️ Regional Analysis")
     
-    if selected_region != 'All':
-        region_data = data[data['Region_name'] == selected_region]
-        st.write(f"📊 Showing data for region: **{selected_region}** ({len(region_data):,} records)")
-    else:
-        region_data = data.copy()
-        st.write(f"📊 Showing data for all regions ({len(region_data):,} records)")
+    available_regions = sorted(data['Region_name'].unique())
+    
+    selected_region = st.selectbox(
+        "Select a Region for Detailed Analysis", 
+        available_regions,
+        help="Choose a region to explore its crime patterns in detail"
+    )
+    
+    region_data = get_records_by_region(data, selected_region)
 
-    return region_data
+    st.info(f"📊 Analyzing **{selected_region}** with {len(region_data):,} records")
+    
+    return region_data, selected_region
+
+def show_region_overview(data, region_data, region_name):
+    """Display key metrics for the selected region."""
+    st.markdown(f"#### 📈 {region_name} - Overview")
+    
+    # Calculate key metrics
+    region_records = len(region_data)
+    total_records = len(data)
+    region_pct = (region_records / total_records) * 100
+    
+    region_departments = region_data['Department_name'].nunique()
+    total_departments = data['Department_name'].nunique()
+
+    region_depositions = region_data['amount'].sum()
+    total_depositions = data['amount'].sum()
+    deposition_pct = (region_depositions / total_depositions) * 100
+    
+    region_avg_rate = region_data['rate_per_1000'].mean()
+    national_avg_rate = data['rate_per_1000'].mean()
+    
+    latest_year = data['year'].max()
+    region_pop = region_data[region_data['year'] == latest_year].groupby('Department_name')['population'].first().sum()
+    total_pop = data[data['year'] == latest_year].groupby('Department_name')['population'].first().sum()
+    pop_pct = (region_pop / total_pop) * 100
+    
+ 
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        st.metric(
+            "Records", 
+            f"{region_records:,}", 
+            delta=f"{region_pct:.1f}% of France"
+        )
+    
+    with col2:
+        st.metric(
+            "Departments", 
+            f"{region_departments}/{total_departments}",
+            delta=f"{(region_departments / total_departments) * 100:.1f}% of France"
+        )
+    
+    with col3:
+        st.metric(
+            "Population", 
+            f"{region_pop:,.0f}", 
+            delta=f"{pop_pct:.1f}% of France"
+        )
+    
+    with col4:
+        st.metric(
+            "Depositions", 
+            f"{region_depositions:,}", 
+            delta=f"{deposition_pct:.1f}% of total"
+        )
+
+    with col5:
+        rate_diff = region_avg_rate - national_avg_rate
+        st.metric(
+            "Rate/1000", 
+            f"{region_avg_rate:.1f}", 
+            delta=f"{rate_diff:+.1f} vs France",
+            delta_color="inverse"  # Higher crime rate = red
+        )
+
+def show_region_departments_comparison(region_data, region_name):
+    """Compare departments within the selected region using a map."""
+    st.markdown(f"#### 🏘️ {region_name} - Department Comparison")
+    
+    dept_comparison = region_data.groupby('Department_name').agg({
+        'amount': 'sum',
+        'population': 'first',
+        'rate_per_1000': 'mean',
+        'Department_lat': 'first',
+        'Department_lon': 'first'
+    }).reset_index()
+    
+    # Sort by rate for analysis
+    dept_comparison = dept_comparison.sort_values('rate_per_1000', ascending=False)
+    
+    center_lat = region_data['Region_lat'].mean()
+    center_lon = region_data['Region_lon'].mean()
+    
+    m = folium.Map(
+        location=[center_lat, center_lon],
+        zoom_start=8,
+        tiles='OpenStreetMap'
+    )
+    
+    max_rate = dept_comparison['rate_per_1000'].max()
+    min_rate = dept_comparison['rate_per_1000'].min()
+    
+    for _, row in dept_comparison.iterrows():
+        size = 15 + (row['rate_per_1000'] / max_rate) * 35  # Size between 15-50        
+        # Color intensity based on rate (green to red scale)
+        rate_normalized = (row['rate_per_1000'] - min_rate) / (max_rate - min_rate) if max_rate != min_rate else 0.5
+        # Green to Red color scale
+        red = int(255 * rate_normalized)
+        green = int(255 * (1 - rate_normalized))
+        color = f"rgb({red}, {green}, 0)"
+        
+        popup_content = f"""
+        <div style="font-family: Arial; width: 200px;">
+            <h4 style="margin: 0; color: #333;">{row['Department_name']}</h4>
+            <hr style="margin: 5px 0;">
+            <b>Rate:</b> {row['rate_per_1000']:.2f} per 1,000<br>
+            <b>Total Depositions:</b> {row['amount']:,}<br>
+            <b>Population:</b> {row['population']:,}<br>
+            <b>Rank:</b> #{dept_comparison.index.get_loc(row.name) + 1} in {region_name}
+        </div>
+        """
+        
+        folium.CircleMarker(
+            location=[row['Department_lat'], row['Department_lon']],
+            radius=size,
+            popup=folium.Popup(popup_content, max_width=250),
+            tooltip=f"{row['Department_name']}: {row['rate_per_1000']:.2f}/1000",
+            color='darkred',
+            fillColor=color,
+            fillOpacity=0.8,
+            weight=2
+        ).add_to(m)
+    st_folium(m, width=700, height=500)
+
+    st.info(f"""
+    💡 **Map Analysis for {region_name}:**
+    - **Circle size**: Larger circles = higher deposition rates
+    - **Color**: Green = lower rates, Red = higher rates
+    - **Click circles** for detailed department information
+    - This geographic view helps identify spatial patterns within the region
+    - As previously noted, high crime rates tend to be located in urban areas with dense populations, especially big cities like Paris, Lyon, etc.
+    - Departments with lower rates may indicate rural areas or effective crime prevention measures.
+    """)
+
+def show_region_departments_bar_chart(region_data, region_name):
+    """Fallback bar chart if coordinate data is not available."""
+    dept_comparison = region_data.groupby('Department_name').agg({
+        'amount': 'sum',
+        'population': 'first',
+        'rate_per_1000': 'mean'
+    }).reset_index()
+    
+    dept_comparison = dept_comparison.sort_values('rate_per_1000', ascending=False)
+    
+    fig = px.bar(
+        dept_comparison,
+        x='Department_name',
+        y='rate_per_1000',
+        color='rate_per_1000',
+        color_continuous_scale='Viridis',
+        title=f"Deposition Rates by Department in {region_name}"
+    )
+    
+    fig.update_layout(
+        xaxis_title="Department",
+        yaxis_title="Rate per 1,000 inhabitants",
+        xaxis_tickangle=45
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    st.info(f"""
+    💡 **Bar Chart Analysis for {region_name}:**
+    - This bar chart shows deposition rates across departments in the selected region.
+    - Departments with higher bars indicate higher deposition rates.
+    - This view helps identify which departments may require more focused crime prevention efforts.
+    """)
+
+def show_region_crime_distribution(region_data, region_name):
+    """Show crime type distribution within the selected region."""
+    st.markdown(f"#### 🚨 {region_name} - Crime Type Distribution")
+    
+    crime_distribution = region_data.groupby('crime_type')['amount'].sum().sort_values(ascending=False)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        fig_pie = px.pie(
+            values=crime_distribution.values,
+            names=crime_distribution.index,
+            title=f"Crime Types in {region_name}",
+            hole=0.4
+        )
+        fig_pie.update_layout(height=400)
+        st.plotly_chart(fig_pie, use_container_width=True)
+    
+    with col2:
+        fig_bar = px.bar(
+            x=crime_distribution.values,
+            y=crime_distribution.index,
+            orientation='h',
+            title=f"Crime Volume by Type",
+            color=crime_distribution.values,
+            color_continuous_scale='Purples'
+        )
+        fig_bar.update_layout(
+            xaxis_title="Number of Depositions",
+            yaxis_title="Crime Type",
+            height=400
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+def show_region_entity_distribution(region_data, region_name):
+    """Show entity distribution within the selected region."""
+    st.markdown(f"#### 👥 {region_name} - Entity Distribution")
+    
+    entity_distribution = region_data.groupby('entity_involved')['amount'].sum()
+    
+    fig = px.pie(
+        values=entity_distribution.values,
+        names=entity_distribution.index,
+        title=f"Depositions by Entity Type in {region_name}",
+        hole=0.5
+    )
+    
+    fig.update_traces(
+        textinfo='label+percent+value',
+        textposition='auto'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+
+    entity_summary = region_data.groupby('entity_involved').agg({
+        'amount': ['sum', 'count'],
+        'rate_per_1000': 'mean'
+    }).round(2)
+    
+    entity_summary.columns = ['Total Depositions', 'Record Count', 'Avg Rate/1000']
+    st.dataframe(entity_summary)
+
+def show_region_temporal_trends(region_data, region_name):
+    """Show temporal trends within the selected region."""
+    st.markdown(f"#### 📅 {region_name} - Temporal Trends")
+    
+    # Debug: Show what we're working with
+    st.markdown("**🔍 Data Overview:**")
+    yearly_by_entity = region_data.groupby(['year', 'entity_involved'])['amount'].sum().reset_index()
+    
+    fig_stacked = px.bar(
+        yearly_by_entity,
+        x='year',
+        y='amount',
+        color='entity_involved',
+        title=f"Depositions by Entity Type Over Time in {region_name}",
+        labels={'amount': 'Number of Depositions', 'year': 'Year'}
+    )
+    
+    fig_stacked.update_layout(
+        xaxis_title="Year",
+        yaxis_title="Number of Depositions",
+        legend_title="Entity Type"
+    )
+    
+    st.plotly_chart(fig_stacked, use_container_width=True)
+    
+    # Overall trend line
+    yearly_trends = region_data.groupby('year')['amount'].sum().reset_index()
+    
+    fig_line = px.line(
+        yearly_trends,
+        x='year',
+        y='amount',
+        title=f"Total Depositions Trend in {region_name}",
+        markers=True
+    )
+    
+    fig_line.update_layout(
+        xaxis_title="Year",
+        yaxis_title="Total Depositions",
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig_line, use_container_width=True)
+    
+    
+    st.info(f"""
+    💡 **Understanding These Numbers:**
+    
+    **What each deposition represents:**
+    - One formal report filed with police/justice system
+    - Could be from a victim, witness, suspect, or about a vehicle
+    - Multiple depositions can relate to the same criminal incident
+    
+    **Why numbers are high:**
+    - Each incident can generate several depositions
+    - Data covers all crime types and entities
+    
+    **Total across all years:** {yearly_trends['amount'].sum():,} depositions
+    **Average per year:** {yearly_trends['amount'].mean():,.0f} depositions
+    """)
+
+def show_crime_analysis_by_demographics(filtered_data):
+    """Display crime analysis by population and housing situation."""
+    st.markdown("#### 🏠👥 Crime Analysis by Demographics")
+    
+    available_crimes = ['All'] + list(filtered_data['crime_type'].unique())
+    selected_crime = st.selectbox(
+        "Select Crime Type for Analysis",
+        available_crimes,
+        help="Choose a specific crime type or 'All' to analyze all crimes together"
+    )
+
+    if selected_crime == 'All':
+        analysis_data = filtered_data.copy()
+        chart_title_suffix = "All Crime Types"
+    else:
+        analysis_data = get_records_by_crime_type(filtered_data, selected_crime)
+        chart_title_suffix = selected_crime
+        
+        if len(analysis_data) == 0:
+            st.warning(f"⚠️ No data available for {selected_crime} with current filters.")
+            return
+    
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**📊 Crime Amount vs Population**")
+        pop_analysis = analysis_data.groupby('Department_name').agg({
+            'amount': 'sum',
+            'population': 'first', 
+            'rate_per_1000': 'mean'
+        }).reset_index()
+        
+        fig_pop = px.scatter(
+            pop_analysis,
+            x='population',
+            y='amount',
+            size='rate_per_1000',
+            hover_name='Department_name',
+            hover_data={
+                'population': ':,.0f',
+                'amount': ':,.0f',
+                'rate_per_1000': ':.2f'
+            },
+            title=f"Crime Amount vs Population<br><sub>{chart_title_suffix}</sub>",
+            labels={
+                'population': 'Population',
+                'amount': 'Number of Depositions',
+                'rate_per_1000': 'Rate per 1,000'
+            },
+            color='rate_per_1000',
+            color_continuous_scale='Reds'
+        )
+        
+        fig_pop.update_layout(
+            height=400,
+            xaxis_title="Population",
+            yaxis_title="Crime Amount",
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig_pop, use_container_width=True)
+    
+    with col2:
+        st.markdown("**🏘️ Crime Amount vs Housing Units**")
+        
+        housing_analysis = analysis_data.groupby('Department_name').agg({
+            'amount': 'sum',
+            'population': 'first',
+            'housing': 'first', 
+            'rate_per_1000': 'mean'
+        }).reset_index()
+        
+        fig_housing = px.scatter(
+            housing_analysis,
+            x='housing',
+            y='amount',
+            size='rate_per_1000',
+            hover_name='Department_name',
+            hover_data={
+                'housing': ':,.0f',
+                'amount': ':,.0f',
+                'population': ':,.0f',
+                'rate_per_1000': ':.2f'
+            },
+            title=f"Crime Amount vs Housing Units<br><sub>{chart_title_suffix}</sub>",
+            labels={
+                'housing': 'Number of Housing Units',
+                'amount': 'Number of Depositions',
+                'rate_per_1000': 'Rate per 1,000'
+            },
+            color='rate_per_1000',
+            color_continuous_scale='Viridis'
+        )
+        
+        fig_housing.update_layout(
+            height=400,
+            xaxis_title="Number of Housing Units",
+            yaxis_title="Crime Amount",
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig_housing, use_container_width=True)
+    st.info("""
+    💡 **Analysis:**
+    - The scatter plots reveal important relationships between crime amounts and both population and housing units.
+    - Departments with higher populations tend to have more crime reports, indicating a potential correlation.
+    - Similarly, areas with more housing units also show increased crime, suggesting that housing density may influence crime rates.
+    - Certain types of crimes seem to be less influenced by the density of population and housing units, however, indicating that other factors may be at play.
+    """)
 
 def show_deep_drives(data):
-    region_data = region_selection(data)
+    region_data, region_name = select_region_for_analysis(data)
+    st.write("---")
+    show_region_overview(data, region_data, region_name)
+    st.write("---")
+    show_region_departments_comparison(region_data, region_name)
+    st.write("---")
+    show_region_departments_bar_chart(region_data, region_name)
+    st.write("---")
+    show_region_crime_distribution(region_data, region_name)
+    st.write("---")
+    show_region_entity_distribution(region_data, region_name)
+    st.write("---")
+    show_region_temporal_trends(region_data, region_name)
+    st.write("---")
+    show_crime_analysis_by_demographics(region_data)
