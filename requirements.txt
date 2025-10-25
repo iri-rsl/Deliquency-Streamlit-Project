@@ -5,6 +5,7 @@ matplotlib
 seaborn
 plotly
 folium
+streamlit-folium
 pyarrow
 altair
 geopandas
@@ -12,4 +13,4 @@ pydeck
 
 missingno
 numpy
-
+nbformat
