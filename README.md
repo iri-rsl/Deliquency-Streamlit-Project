@@ -2,6 +2,7 @@
 
 ## Description
 
+Can also find the link to the dashboard [here](https://deliquency-app-project-hgiwuyfbum4ebrfsrhd4fx.streamlit.app/) !
 This Streamlit-based dashboard provides comprehensive analysis and visualization of French delinquency data from the national police and gendarmerie. The application offers interactive visualizations to explore crime patterns across French departments and regions, including temporal trends, geographic distributions, and demographic correlations.
 
 ### Key Features
