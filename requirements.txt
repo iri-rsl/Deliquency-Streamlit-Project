@@ -5,6 +5,7 @@ matplotlib
 seaborn
 plotly
 folium
+streamlit-folium
 pyarrow
 altair
 geopandas

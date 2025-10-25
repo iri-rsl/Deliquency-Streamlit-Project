@@ -2,87 +2,67 @@
 import streamlit as st
 from utils.io import show_license
 
-def show():
-    # -------------------------------
-    # Title
-    # -------------------------------
-    st.title("Delinquency in France: Beyond the Numbers")
+def show ():
+   st.title("Introduction: Beyond the Numbers")
 
-    # -------------------------------
-    # Context
-    # -------------------------------
-    st.markdown("""
-    ### 🧭 Context
+   st.markdown("""
+   ### 🧭 Context
+   Delinquency is often a central topic in public debate in France, and statistics about it
+   can easily influence perception — sometimes more than reality itself.
+   This dashboard offers a simple, data-driven way to explore **how reported offences evolve**
+   across regions and years, without jumping to conclusions.
 
-    Discussions about *delinquency* in France are never purely statistical.  
-    Crime figures regularly fuel political debates, public fears, and sometimes, **stigmatization** of certain territories or populations.
+   The goal is not to label regions as "dangerous" or "safe", but to **understand patterns**
+   and **question what the data really tells us**.
+   """)
 
-    Yet, behind these numbers lies a more complex reality:  
-    - Delinquency data depends on what is **reported**, **recorded**, and **classified**.  
-    - A region with more active police reporting can appear *more delinquent* than another where crimes are underreported.  
-    - Media narratives often amplify these differences, turning data into tools of perception rather than objective measurement.
+   st.markdown("""
+   ### 🎯 Objectives
+   - Observe how delinquency indicators change over time.  
+   - Compare regional differences across France.  
+   - Encourage reflection on what reported data represents — and what it might hide.
+   """)
 
-    This dashboard does **not** aim to label regions as “safe” or “dangerous”.  
-    Instead, it invites users to **observe trends critically**, understand the **limits of quantitative data**, and question how such numbers are produced and interpreted.
-    """)
+   st.markdown("""
+   ### ⚠️ Data Caveats & Limitations
+   The dataset provides valuable insight into **reported offences**, but several caveats affect interpretation:
 
-    # -------------------------------
-    # Objectives
-    # -------------------------------
-    st.markdown("""
-    ### 🎯 Objectives
+   1. **Reported offences only** — many incidents, especially minor or sensitive ones, go unreported.  
+      This means the data reflects *institutional activity* more than actual delinquency levels.
 
-    Using open data from [data.gouv.fr](https://www.data.gouv.fr/), this dashboard aims to:
-    - Explore how **reported delinquency** has evolved across years and regions in France.  
-    - Identify **regional differences** in offence rates, while keeping methodological limits in mind.  
-    - Encourage **critical reflection** on what these numbers represent — and what they might conceal.  
-    """)
+   2. **Incomplete records** — some departments or years may contain missing or inconsistent data.
 
-    # -------------------------------
-    # Data caveats
-    # -------------------------------
-    st.markdown("""
-    ### ⚠️ Data Caveats & Limitations
+   3. **Population mismatch** — rates are computed with offence counts and population data from different years,  
+      which may slightly distort values.
 
-    While the dataset offers valuable insight into reported offences, it must be interpreted with caution:
+   4. **Possible duplicate reports** — without identifiers, the same incident may appear several times if multiple people report it.
 
-    1. **Reported offences only** — data covers only crimes officially reported to authorities;  
-       unreported or unrecorded incidents are absent.
+   5. **Discrepancy between victim and infraction reports** —  
+      official infraction data often differs from victimization reports.  
+      For example, some women may declare domestic violence or assault but see their case dismissed for “lack of proof.”  
+      These unrecognized or unpursued complaints **never appear in official infraction statistics**,  
+      leading to a gap between **experienced** and **legally recorded** offences.
 
-    2. **Incomplete records** — some years or departments may contain missing or inconsistent entries.
+   In short, these figures should be read as **indicators of reported and recorded activity**,  
+   not exact reflections of all experienced crime.
+   """)
 
-    3. **Population mismatch** — *taux pour mille* (rate per 1,000 inhabitants) is calculated from 
-       offence counts and population data from **different years**, introducing approximation errors.
+   st.markdown("### 🗂️ Dataset Information")
 
-    4. **Possible duplicate reports** — since there are no identifiers, the same event could have been 
-       reported several times or by multiple individuals.
-
-    These limits mean that the figures shown here are **indicators of reported activity**,  
-    not an exact measure of real or perceived delinquency.
-    """)
-
-    # -------------------------------
-    # Dataset information
-    # -------------------------------
-    st.markdown("### 🗂️ Dataset Information")
-
-    st.info("""
-    - We have a record of reported offences in France from 2016 to 2024
-    - Data is broken down by department, offence type, and year
-    - Data is also broken down by the different entities/actions involved: the victims, the act of infraction itself, the vehicles, and the perpetrators.
+   st.info("""
+   - We have a record of reported offences in France from 2016 to 2024
+   - Data is broken down by department, offence type, and year
+   - Data is also broken down by the different entities/actions involved: the victims, the act of infraction itself, the vehicles, and the perpetrators.
 
             For example, a single incident involving a stolen vehicle with an injured victim would generate multiple records: one for the victim, one for the vehicle, and one for the perpetrator.
-    - Population data used to compute *taux pour mille* comes from INSEE census data of different years [2016-2021]
-    """)
+   - Population data used to compute *taux pour mille* comes from INSEE census data of different years [2016-2021]
+   """)
 
-    # -------------------------------
-    # Navigation hint
-    # -------------------------------
-    st.markdown("""
-    ---
-    Use the **sidebar navigation** on the left 👈 to explore:
-    - National and regional trends      
-    - Regional deep dives  
-    - Data preparation & quality checks  
-    - Final insights and reflections  
-    """)
+   st.markdown("""
+   ---
+   Use the **sidebar navigation** to explore:
+   - National and regional trends  
+   - Regional deep dives  
+   - Data preparation and quality checks  
+   - Final conclusions  
+   """)

@@ -10,16 +10,15 @@ def show():
     # Load data
     data = load_data()
     st.markdown("### Summary of Key Performance Indicators (KPIs)")
-
     show_kpis(data)
-    st.write("---")
-    
-    st.markdown("### How has reported delinquency evolved in France over time?")
+    st.markdown("---")
+    st.subheader("Summary of National & Regional Trends")
 
-    st.markdown("### How does population size relate to delinquency rate?")
-    
-    st.markdown("### Where are offences most concentrated geographically?")
+    st.markdown("""
+    Overall, **reported delinquency in France shows moderate variation over the years**, 
+    with some regions consistently above the national average and others remaining stable or improving.  
+    Urban areas, as expected, tend to report higher rates — but this may reflect population density and reporting activity more than actual differences in behavior.
 
-    st.markdown("### What are the top types of reported offences?")
-
+    Use the next section to **focus on specific regions** and explore their individual trends in detail.
+    """)
     
